@@ -11,7 +11,7 @@ v := 0
 
 all: ${COMPILER}
 
-${COMPILER}: lex.yy.c y.tab.c
+${COMPILER}: lex.yy.c y.tab.c symbol_table.o table_list.o
 	${CC} ${CFLAGS} -o $@ $^
 
 lex.yy.c: ${LEX_SRC} ${HEADER}
