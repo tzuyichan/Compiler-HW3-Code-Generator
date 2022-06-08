@@ -22,6 +22,17 @@
     extern int yylex();
     extern FILE *yyin;
 
+    /* Used to generate code */
+    /* As printf; the usage: CODEGEN("%d - %s\n", 100, "Hello world"); */
+    /* We do not enforce the use of this macro */
+    #define CODEGEN(...) \
+        do { \
+            for (int i = 0; i < g_indent_cnt; i++) { \
+                fprintf(fout, "\t"); \
+            } \
+            fprintf(fout, __VA_ARGS__); \
+        } while (0)
+
     /* Symbol table function - you can add new functions if needed. */
     /* parameters and return type can be changed */
     static void create_sym_table();
@@ -32,6 +43,9 @@
     static char *check_type(char *nterm1, char *nterm2, char *operator);
 
     /* Global variables */
+    bool g_has_error = false;
+    FILE *fout = NULL;
+    int g_indent_cnt = 0;
     bool HAS_ERROR = false;
     char TYPE[8];
     char FUNC_SIG[ID_MAX_LEN];
@@ -338,18 +352,35 @@ int main(int argc, char *argv[])
     } else {
         yyin = stdin;
     }
+    if (!yyin) {
+        printf("file `%s` doesn't exists or cannot be opened\n", argv[1]);
+        exit(1);
+    }
 
     // initialize global strings
     memset(TYPE, 0, 8);
     memset(FUNC_SIG, 0, ID_MAX_LEN);
     memset(CURRENT_FUNC, 0, ID_MAX_LEN);
 
+    /* Codegen output init */
+    char *bytecode_filename = "hw3.j";
+    fout = fopen(bytecode_filename, "w");
+    CODEGEN(".source hw3.j\n");
+    CODEGEN(".class public Main\n");
+    CODEGEN(".super java/lang/Object\n");
+
     yylineno = 0;
     T = init_table();
     yyparse();
 
 	printf("Total lines: %d\n", yylineno);
+    fclose(fout);
     fclose(yyin);
+
+    if (g_has_error) {
+        remove(bytecode_filename);
+    }
+    yylex_destroy();
     return 0;
 }
 
@@ -402,7 +433,6 @@ static void insert_symbol(char *name, char *type) {
 
 static void lookup_symbol(char *name) {
     Result *R = find_symbol(T, name);
-    /* int lineno = IN_FUNC_SCOPE ? yylineno + 1 : yylineno; */
 
     if (R)
     {
