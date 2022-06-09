@@ -5,3 +5,8 @@ lex.*
 y.*
 venv/
 *.o
+*.dSYM/
+.vscode/
+*.j
+*.class
+*.log
