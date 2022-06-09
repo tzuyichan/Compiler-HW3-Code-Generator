@@ -196,10 +196,14 @@ Statement
 DeclarationStmt
     : VAR IDENT Type DeclAssignment {
         REGISTER = insert_symbol($2, $3);
-        if (strcmp($4, "unassigned") != 0)
+        if (strcmp($4, "unassigned") == 0)
         {
-            CODEGEN("%cstore %d\n", get_op_type($4), REGISTER);
+            if (strcmp($3, "string") == 0)
+                CODEGEN("aconst_null\n");
+            else
+                CODEGEN("%cconst_0\n", get_op_type($3));
         }
+        CODEGEN("%cstore %d\n", get_op_type($3), REGISTER);
     }
 ;
 
@@ -325,7 +329,7 @@ UnaryExpr
 
 PrimaryExpr
     : Operand
-    | '"' STRING_LIT '"'    { $$ = "string"; printf("STRING_LIT %s\n", $2); }
+    | '"' STRING_LIT '"'    { $$ = "string"; CODEGEN("ldc \"%s\"\n", $2); }
     | Boolean
     | ParenthesisExpr
     | FunctionCall
@@ -478,13 +482,17 @@ static int lookup_symbol(char *name) {
         strncpy(TYPE, R->type, 8);
         printf("IDENT (name=%s, address=%d)\n", name, R->addr);
 
-        if (strcmp(TYPE, "int32") == 0)
+        if (strcmp(TYPE, "int32") == 0 || strcmp(TYPE, "bool") == 0)
         {
             CODEGEN("iload %d\n", R->addr);
         }
-        if (strcmp(TYPE, "float32") == 0)
+        else if (strcmp(TYPE, "float32") == 0)
         {
             CODEGEN("fload %d\n", R->addr);
+        }
+        else
+        {
+            CODEGEN("aload %d\n", R->addr);
         }
     }
     else
@@ -629,10 +637,14 @@ static char get_op_type(char *type)
 {
     if (strcmp(type, "int32") == 0 || strcmp(type, "float32") == 0)
         return type[0];
+    else if (strcmp(type, "bool") == 0)
+        return 'i';
+    else if (strcmp(type, "string") == 0)
+        return 'a';
     else
     {
         HAS_ERROR = true;
-        return 'Z';
+        return 'z';
     }
 }
 
