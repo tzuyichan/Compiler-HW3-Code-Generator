@@ -37,7 +37,7 @@
     /* parameters and return type can be changed */
     static void create_sym_table();
     static int insert_symbol(char *name, char *type);
-    static int lookup_symbol(char *name);
+    static int lookup_symbol(char *name, bool load_to_stack);
     static void lookup_func(char *name);
     static void dump_sym_table();
     static char *check_type(char *nterm1, char *nterm2, char *operator);
@@ -391,7 +391,7 @@ FuncCallParamList
 
 Operand
     : Constant
-    | IDENT             { REGISTER = lookup_symbol($1); strncpy($$, TYPE, 8); }
+    | IDENT             { REGISTER = lookup_symbol($1, true); strncpy($$, TYPE, 8); }
 ;
 
 Boolean
@@ -513,7 +513,7 @@ static int insert_symbol(char *name, char *type) {
     return addr;
 }
 
-static int lookup_symbol(char *name) {
+static int lookup_symbol(char *name, bool load_to_stack) {
     int addr;
     Result *R = find_symbol(T, name);
 
@@ -522,17 +522,20 @@ static int lookup_symbol(char *name) {
         strncpy(TYPE, R->type, 8);
         printf("IDENT (name=%s, address=%d)\n", name, R->addr);
 
-        if (strcmp(TYPE, "int32") == 0 || strcmp(TYPE, "bool") == 0)
+        if (load_to_stack)
         {
-            CODEGEN("iload %d\n", R->addr);
-        }
-        else if (strcmp(TYPE, "float32") == 0)
-        {
-            CODEGEN("fload %d\n", R->addr);
-        }
-        else
-        {
-            CODEGEN("aload %d\n", R->addr);
+            if (strcmp(TYPE, "int32") == 0 || strcmp(TYPE, "bool") == 0)
+            {
+                CODEGEN("iload %d\n", R->addr);
+            }
+            else if (strcmp(TYPE, "float32") == 0)
+            {
+                CODEGEN("fload %d\n", R->addr);
+            }
+            else
+            {
+                CODEGEN("aload %d\n", R->addr);
+            }
         }
     }
     else
