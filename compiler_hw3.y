@@ -88,7 +88,7 @@
 
 /* Nonterminal with return, which need to sepcify type */
 %type <s_val> Type ReturnType 
-%type <s_val> ParenthesisExpr Expression 
+%type <s_val> DeclAssignment ParenthesisExpr Expression
 %type <s_val> LogOrExpr LogAndExpr CmpExpr AddExpr MulExpr
 %type <s_val> CastExpr UnaryExpr PrimaryExpr FunctionCall Boolean Operand Constant
 
@@ -192,12 +192,18 @@ Statement
 ;
 
 DeclarationStmt
-    : VAR IDENT Type DeclAssignment     { insert_symbol($2, $3); }
+    : VAR IDENT Type DeclAssignment {
+        REGISTER = insert_symbol($2, $3);
+        if (strcmp($4, "unassigned") != 0)
+        {
+            CODEGEN("%cstore %d\n", get_op_type($4), REGISTER);
+        }
+    }
 ;
 
 DeclAssignment
-    : ASSIGN Expression
-    | /* empty */
+    : ASSIGN Expression     { $$ = $2; }
+    | /* empty */           { $$ = "unassigned"; }
 ;
 
 SimpleStmt
@@ -331,7 +337,7 @@ FuncCallParamList
 
 Operand
     : Constant
-    | IDENT             { lookup_symbol($1); strncpy($$, TYPE, 8); }
+    | IDENT             { REGISTER = lookup_symbol($1); strncpy($$, TYPE, 8); }
 ;
 
 Boolean
@@ -340,8 +346,16 @@ Boolean
 ;
 
 Constant
-    : INT_LIT           { $$ = "int32"; printf("INT_LIT %d\n", $1); }
-    | FLOAT_LIT         { $$ = "float32"; printf("FLOAT_LIT %f\n", $1); } 
+    : INT_LIT {
+        $$ = "int32";
+        printf("INT_LIT %d\n", $1);
+        CODEGEN("ldc %d\n", $1);
+    }
+    | FLOAT_LIT {
+        $$ = "float32";
+        printf("FLOAT_LIT %f\n", $1);
+        CODEGEN("ldc %f\n", $1);
+    }
 ;
 
 %%
@@ -452,7 +466,16 @@ static int lookup_symbol(char *name) {
     if (R)
     {
         strncpy(TYPE, R->type, 8);
-        printf("IDENT (name=%s, address=%d)\n", name, R->addr); 
+        printf("IDENT (name=%s, address=%d)\n", name, R->addr);
+
+        if (strcmp(TYPE, "int32") == 0)
+        {
+            CODEGEN("iload %d\n", R->addr);
+        }
+        if (strcmp(TYPE, "float32") == 0)
+        {
+            CODEGEN("fload %d\n", R->addr);
+        }
     }
     else
     {
