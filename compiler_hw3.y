@@ -42,6 +42,7 @@
     static void dump_sym_table();
     static char *check_type(char *nterm1, char *nterm2, char *operator);
     static char get_op_type(char *type);
+    static void print_codegen(char *print_type, char *type);
 
     /* Global variables */
     bool HAS_ERROR = false;
@@ -241,8 +242,8 @@ CaseStmt
 ;
 
 PrintStmt
-    : PRINT ParenthesisExpr         { printf("PRINT %s\n", $2); }
-    | PRINTLN ParenthesisExpr       { printf("PRINTLN %s\n", $2); }
+    : PRINT ParenthesisExpr         { print_codegen("print", $2); }
+    | PRINTLN ParenthesisExpr       { print_codegen("println", $2); }
 ;
 
 AssignmentStmt
@@ -626,4 +627,31 @@ static char get_op_type(char *type)
     }
 }
 
+static void print_codegen(char *print_type, char *type)
+{
+    if (strcmp(type, "int32") == 0 || strcmp(type, "float32") == 0)
+    {
+        CODEGEN("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+        CODEGEN("swap\n");
+        CODEGEN("invokevirtual java/io/PrintStream/%s(%c)V\n", print_type, type[0] - 32);
+    }
+    else
+    {
+        if (strcmp(type, "bool") == 0)
+        {
+            CODEGEN("ifne L_cmp_%d\n", LABEL_CNT++);
+            CODEGEN("ldc \"false\"\n");
+            CODEGEN("goto L_cmp_%d\n", LABEL_CNT++);
+            INDENT_LVL--;
+            CODEGEN("L_cmp_%d:\n", LABEL_CNT - 2);
+            INDENT_LVL++;
+            CODEGEN("ldc \"true\"\n");
+            INDENT_LVL--;
+            CODEGEN("L_cmp_%d:\n", LABEL_CNT - 1);
+            INDENT_LVL++;
+        }
+        CODEGEN("getstatic java/lang/System/out Ljava/io/PrintStream;\n");
+        CODEGEN("swap\n");
+        CODEGEN("invokevirtual java/io/PrintStream/%s(Ljava/lang/String;)V\n", print_type);
+    }
 }
