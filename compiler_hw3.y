@@ -41,6 +41,7 @@
     static void lookup_func(char *name);
     static void dump_sym_table();
     static char *check_type(char *nterm1, char *nterm2, char *operator);
+    static char get_op_type(char *type);
 
     /* Global variables */
     bool HAS_ERROR = false;
@@ -574,4 +575,16 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
     }
 
     return nterm1;
+
+static char get_op_type(char *type)
+{
+    if (strcmp(type, "int32") == 0 || strcmp(type, "float32") == 0)
+        return type[0];
+    else
+    {
+        HAS_ERROR = true;
+        return 'Z';
+    }
+}
+
 }
