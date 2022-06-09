@@ -43,10 +43,11 @@
     static char *check_type(char *nterm1, char *nterm2, char *operator);
 
     /* Global variables */
-    bool g_has_error = false;
-    FILE *fout = NULL;
-    int g_indent_cnt = 0;
     bool HAS_ERROR = false;
+    FILE *fout = NULL;
+    int INDENT_LVL = 0;
+    int REGISTER = 0;
+    int LABEL_CNT = 0;
     char TYPE[8];
     char FUNC_SIG[ID_MAX_LEN];
     char CURRENT_FUNC[ID_MAX_LEN];
@@ -368,16 +369,23 @@ int main(int argc, char *argv[])
     CODEGEN(".source hw3.j\n");
     CODEGEN(".class public Main\n");
     CODEGEN(".super java/lang/Object\n");
+    CODEGEN(".method public static main([Ljava/lang/String;)V\n");
+    CODEGEN(".limit stack 100\n");
+    CODEGEN(".limit locals 100\n");
+    INDENT_LVL++;
 
     yylineno = 0;
     T = init_table();
     yyparse();
 
 	printf("Total lines: %d\n", yylineno);
+    CODEGEN("return\n");
+    INDENT_LVL--;
+    CODEGEN(".end method\n");
     fclose(fout);
     fclose(yyin);
 
-    if (g_has_error) {
+    if (HAS_ERROR) {
         remove(bytecode_filename);
     }
     yylex_destroy();
