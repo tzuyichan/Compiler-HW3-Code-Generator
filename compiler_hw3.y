@@ -43,6 +43,7 @@
     static char *check_type(char *nterm1, char *nterm2, char *operator);
     static char get_op_type(char *type);
     static void print_codegen(char *print_type, char *type);
+    static void cmp_codegen(char *cmp_type, char *type);
 
     /* Global variables */
     bool HAS_ERROR = false;
@@ -662,4 +663,29 @@ static void print_codegen(char *print_type, char *type)
         CODEGEN("swap\n");
         CODEGEN("invokevirtual java/io/PrintStream/%s(Ljava/lang/String;)V\n", print_type);
     }
+}
+
+static void cmp_codegen(char *cmp_type, char *type)
+{
+    /* char cmp_op[] = strcmp(type, "int32") ? "isub" : "fcmpl"; */
+    /* if (strcmp(type, "int32") == 0)
+        char cmp_op[] = "isub";
+    else
+        char cmp_op[] = "fcmpl"; */
+
+    if (strcmp(type, "int32") == 0)
+        CODEGEN("isub\n");
+    else
+        CODEGEN("fcmpl\n");
+
+    CODEGEN("%s L_cmp_%d\n", cmp_type, LABEL_CNT++);
+    CODEGEN("iconst_0\n");
+    CODEGEN("goto L_cmp_%d\n", LABEL_CNT++);
+    INDENT_LVL--;
+    CODEGEN("L_cmp_%d:\n", LABEL_CNT - 2);
+    INDENT_LVL++;
+    CODEGEN("iconst_1\n");
+    INDENT_LVL--;
+    CODEGEN("L_cmp_%d:\n", LABEL_CNT - 1);
+    INDENT_LVL++;
 }
