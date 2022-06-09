@@ -278,12 +278,12 @@ Expression
 
 LogOrExpr
     : LogAndExpr
-    | LogOrExpr LOR LogAndExpr           { $$ = check_type($1, $3, $2); printf("LOR\n"); }
+    | LogOrExpr LOR LogAndExpr           { $$ = check_type($1, $3, $2); CODEGEN("ior\n"); }
 ;
 
 LogAndExpr
     : CmpExpr
-    | LogAndExpr LAND CmpExpr          { $$ = check_type($1, $3, $2); printf("LAND\n"); }
+    | LogAndExpr LAND CmpExpr          { $$ = check_type($1, $3, $2); CODEGEN("iand\n"); }
 ;
 
 CmpExpr
@@ -292,7 +292,7 @@ CmpExpr
     | CmpExpr NEQ AddExpr          { $$ = check_type($1, $3, $2); printf("NEQ\n"); }
     | CmpExpr LSS AddExpr          { $$ = check_type($1, $3, $2); printf("LSS\n"); }
     | CmpExpr LEQ AddExpr          { $$ = check_type($1, $3, $2); printf("LEQ\n"); }
-    | CmpExpr GTR AddExpr          { $$ = check_type($1, $3, $2); printf("GTR\n"); }
+    | CmpExpr GTR AddExpr          { $$ = check_type($1, $3, $2); cmp_codegen("ifgt", $1); }
     | CmpExpr GEQ AddExpr          { $$ = check_type($1, $3, $2); printf("GEQ\n"); }
 ;
 
@@ -318,8 +318,8 @@ CastExpr
 UnaryExpr
     : PrimaryExpr
     | ADD PrimaryExpr       { $$ = check_type($2, $2, $1); printf("POS\n"); }
-    | NOT UnaryExpr         { $$ = check_type($2, $2, $1); printf("NOT\n"); }
     | SUB PrimaryExpr       { $$ = check_type($2, $2, $1); CODEGEN("%cneg\n", get_op_type($2)); }
+    | NOT { CODEGEN("iconst_1 ; NOT\n"); } UnaryExpr { $$ = check_type($3, $3, $1); CODEGEN("ixor\n"); }
 ;
 
 PrimaryExpr
@@ -350,8 +350,8 @@ Operand
 ;
 
 Boolean
-    : TRUE_             { $$ = "bool"; printf("TRUE 1\n"); }
-    | FALSE_            { $$ = "bool"; printf("FALSE 0\n"); }
+    : TRUE_             { $$ = "bool"; CODEGEN("iconst_1\n"); }
+    | FALSE_            { $$ = "bool"; CODEGEN("iconst_0\n"); }
 ;
 
 Constant
