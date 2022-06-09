@@ -230,8 +230,20 @@ ElseStmt
 ;
 
 ForStmt
-    : FOR Expression { check_type($2, $2, "FOR"); } Block
-    | FOR ForClause Block
+    : FOR {
+        INDENT_LVL--;
+        CODEGEN("L_for_begin:\n");
+        INDENT_LVL++;
+    } Expression {
+        check_type($3, $3, "FOR");
+        CODEGEN("ifeq L_for_exit\n");
+    } Block {
+        CODEGEN("goto L_for_begin\n");
+        INDENT_LVL--;
+        CODEGEN("L_for_exit:\n");
+        INDENT_LVL++;
+    }
+    | FOR {} ForClause Block
 ;
 
 ForClause
@@ -735,12 +747,6 @@ static void print_codegen(char *print_type, char *type)
 
 static void cmp_codegen(char *cmp_type, char *type)
 {
-    /* char cmp_op[] = strcmp(type, "int32") ? "isub" : "fcmpl"; */
-    /* if (strcmp(type, "int32") == 0)
-        char cmp_op[] = "isub";
-    else
-        char cmp_op[] = "fcmpl"; */
-
     if (strcmp(type, "int32") == 0)
         CODEGEN("isub\n");
     else
