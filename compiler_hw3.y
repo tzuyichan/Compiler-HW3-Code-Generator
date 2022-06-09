@@ -263,7 +263,7 @@ AssignmentStmt
     }
     // add assign
     | IDENT {
-        lookup_symbol($1, false);
+        lookup_symbol($1, true);
         strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } ADD_ASSIGN Expression {
         check_type($1, $4, $3);
@@ -273,7 +273,7 @@ AssignmentStmt
     }
     // sub assign
     | IDENT {
-        lookup_symbol($1, false);
+        lookup_symbol($1, true);
         strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } SUB_ASSIGN Expression {
         check_type($1, $4, $3);
@@ -283,7 +283,7 @@ AssignmentStmt
     }
     // mul assign
     | IDENT {
-        lookup_symbol($1, false);
+        lookup_symbol($1, true);
         strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } MUL_ASSIGN Expression {
         check_type($1, $4, $3);
@@ -293,7 +293,7 @@ AssignmentStmt
     }
     // div assign
     | IDENT {
-        lookup_symbol($1, false);
+        lookup_symbol($1, true);
         strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } QUO_ASSIGN Expression {
         check_type($1, $4, $3);
@@ -303,9 +303,8 @@ AssignmentStmt
     }
     // rem assign
     | IDENT {
-        lookup_symbol($1, false);
+        lookup_symbol($1, true);
         strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
-    } QUO_ASSIGN Expression {
     } REM_ASSIGN Expression {
         check_type($1, $4, $3);
         REGISTER = lookup_symbol(CURRENT_IDENT, false);
