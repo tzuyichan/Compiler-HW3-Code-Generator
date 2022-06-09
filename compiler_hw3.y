@@ -256,8 +256,16 @@ AssignmentStmt
 ;
 
 IncDecStmt
-    : Operand INC       { printf("INC\n"); }
-    | Operand DEC       { printf("DEC\n"); }
+    : Operand INC {
+        CODEGEN("%cconst_1\n", get_op_type($1));
+        CODEGEN("%cadd\n", get_op_type($1));
+        CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
+    }
+    | Operand DEC {
+        CODEGEN("%cconst_1\n", get_op_type($1));
+        CODEGEN("%csub\n", get_op_type($1));
+        CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
+    }
 ;
 
 ParenthesisExpr
@@ -290,15 +298,15 @@ CmpExpr
 
 AddExpr
     : MulExpr
-    | AddExpr ADD MulExpr           { $$ = check_type($1, $3, $2); printf("ADD\n"); }
-    | AddExpr SUB MulExpr           { $$ = check_type($1, $3, $2); printf("SUB\n"); }
+    | AddExpr ADD MulExpr           { $$ = check_type($1, $3, $2); CODEGEN("%cadd\n", TYPE[0]); }
+    | AddExpr SUB MulExpr           { $$ = check_type($1, $3, $2); CODEGEN("%csub\n", TYPE[0]); }
 ;
 
 MulExpr
     : CastExpr
-    | MulExpr MUL CastExpr           { $$ = check_type($1, $3, $2); printf("MUL\n"); }
-    | MulExpr QUO CastExpr           { $$ = check_type($1, $3, $2); printf("QUO\n"); }
-    | MulExpr REM CastExpr           { $$ = check_type($1, $3, $2); printf("REM\n"); }
+    | MulExpr MUL CastExpr           { $$ = check_type($1, $3, $2); CODEGEN("%cmul\n", TYPE[0]); }
+    | MulExpr QUO CastExpr           { $$ = check_type($1, $3, $2); CODEGEN("%cdiv\n", TYPE[0]); }
+    | MulExpr REM CastExpr           { $$ = check_type($1, $3, $2); CODEGEN("irem\n"); }
 ;
 
 CastExpr
@@ -310,8 +318,8 @@ CastExpr
 UnaryExpr
     : PrimaryExpr
     | ADD PrimaryExpr       { $$ = check_type($2, $2, $1); printf("POS\n"); }
-    | SUB PrimaryExpr       { $$ = check_type($2, $2, $1); printf("NEG\n"); }
     | NOT UnaryExpr         { $$ = check_type($2, $2, $1); printf("NOT\n"); }
+    | SUB PrimaryExpr       { $$ = check_type($2, $2, $1); CODEGEN("%cneg\n", get_op_type($2)); }
 ;
 
 PrimaryExpr
