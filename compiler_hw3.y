@@ -199,7 +199,7 @@ DeclarationStmt
         if (strcmp($4, "unassigned") == 0)
         {
             if (strcmp($3, "string") == 0)
-                CODEGEN("aconst_null\n");
+                CODEGEN("ldc \"\"\n");
             else
                 CODEGEN("%cconst_0\n", get_op_type($3));
         }
@@ -252,12 +252,52 @@ PrintStmt
 ;
 
 AssignmentStmt
-    : IDENT { lookup_symbol($1); strncpy($1, TYPE, 8); } ASSIGN Expression { check_type($1, $4, $3); printf("ASSIGN\n"); }
-    | IDENT { lookup_symbol($1); strncpy($1, TYPE, 8); } ADD_ASSIGN Expression { printf("ADD\n"); }
-    | IDENT { lookup_symbol($1); strncpy($1, TYPE, 8); } SUB_ASSIGN Expression { printf("SUB\n"); }
-    | IDENT { lookup_symbol($1); strncpy($1, TYPE, 8); } MUL_ASSIGN Expression { printf("MUL\n"); }
-    | IDENT { lookup_symbol($1); strncpy($1, TYPE, 8); } QUO_ASSIGN Expression { printf("QUO\n"); }
-    | IDENT { lookup_symbol($1); strncpy($1, TYPE, 8); } REM_ASSIGN Expression { printf("REM\n"); }
+    : IDENT {
+        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+    } ASSIGN Expression {
+        check_type($1, $4, $3);
+        CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
+    }
+    // add assign
+    | IDENT {
+        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+    } ADD_ASSIGN Expression {
+        check_type($1, $4, $3);
+        CODEGEN("%cadd\n", get_op_type($1));
+        CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
+    }
+    // sub assign
+    | IDENT {
+        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+    } SUB_ASSIGN Expression {
+        check_type($1, $4, $3);
+        CODEGEN("%csub\n", get_op_type($1));
+        CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
+    }
+    // mul assign
+    | IDENT {
+        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+    } MUL_ASSIGN Expression {
+        check_type($1, $4, $3);
+        CODEGEN("%cmul\n", get_op_type($1));
+        CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
+    }
+    // div assign
+    | IDENT {
+        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+    } QUO_ASSIGN Expression {
+        check_type($1, $4, $3);
+        CODEGEN("%cdiv\n", get_op_type($1));
+        CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
+    }
+    // rem assign
+    | IDENT {
+        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+    } REM_ASSIGN Expression {
+        check_type($1, $4, $3);
+        CODEGEN("irem\n");
+        CODEGEN("istore %d\n", REGISTER);
+    }
 ;
 
 IncDecStmt
