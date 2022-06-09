@@ -27,7 +27,7 @@
     /* We do not enforce the use of this macro */
     #define CODEGEN(...) \
         do { \
-            for (int i = 0; i < g_indent_cnt; i++) { \
+            for (int i = 0; i < INDENT_LVL; i++) { \
                 fprintf(fout, "\t"); \
             } \
             fprintf(fout, __VA_ARGS__); \
@@ -415,6 +415,7 @@ static int insert_symbol(char *name, char *type) {
     {
         printf("error:%d: %s redeclared in this block. previous declaration at line %d\n",
                yylineno, name, R->lineno);
+        HAS_ERROR = true;
     }
 
     // trick to fix wrong line number inside functions
@@ -457,6 +458,7 @@ static int lookup_symbol(char *name) {
     {
         strncpy(TYPE, "ERROR", 8);
         printf("error:%d: undefined: %s\n", yylineno + 1, name);
+        HAS_ERROR = true;
     }
 
     addr = R->addr;
@@ -522,6 +524,7 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
     {
         if (strcmp(nterm1, nterm2) == 0 && strcmp(nterm1, "bool") == 0)
         {
+            strncpy(TYPE, "bool", 8);
             return "bool";
         }
         else
@@ -529,6 +532,8 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
             char *wrong_type = strcmp(nterm1, "bool") == 0 ? nterm2 : nterm1;
             printf("error:%d: invalid operation: (operator %s not defined on %s)\n",
                 yylineno, op, wrong_type);
+            HAS_ERROR = true;
+            strncpy(TYPE, "ERROR", 8);
             return "ERROR";
         }
     }
@@ -537,6 +542,7 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
     {
         if (strcmp(nterm1, nterm2) == 0 && strcmp(nterm1, "int32") == 0)
         {
+            strncpy(TYPE, "int32", 8);
             return "int32";
         }
         else
@@ -544,6 +550,8 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
             char *wrong_type = strcmp(nterm1, "int32") == 0 ? nterm2 : nterm1;
             printf("error:%d: invalid operation: (operator %s not defined on %s)\n",
                 yylineno, op, wrong_type);
+            HAS_ERROR = true;
+            strncpy(TYPE, "ERROR", 8);
             return "ERROR";
         }
     }
@@ -553,10 +561,13 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
     {
         if (strcmp(nterm1, "ERROR") == 0)  // don't test for error type in condition
         {
+            strncpy(TYPE, "bool", 8);
             return "bool";
         }
         printf("error:%d: non-bool (type %s) used as for condition\n",
-               yylineno + 1, nterm1, op);
+               yylineno + 1, nterm1);
+        HAS_ERROR = true;
+        strncpy(TYPE, "ERROR", 8);
         return "ERROR";
     }
 
@@ -564,6 +575,8 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
     {
         printf("error:%d: invalid operation: %s (mismatched types %s and %s)\n",
                yylineno, op, nterm1, nterm2);
+        HAS_ERROR = true;
+        strncpy(TYPE, "ERROR", 8);
         return "ERROR";
     }
 
@@ -571,10 +584,13 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
         || strcmp(op, "LSS") == 0 || strcmp(op, "LEQ") == 0
         || strcmp(op, "GTR") == 0 || strcmp(op, "GEQ") == 0)
     {
+        strncpy(TYPE, "bool", 8);
         return "bool";
     }
 
+    strncpy(TYPE, nterm1, 8);
     return nterm1;
+}
 
 static char get_op_type(char *type)
 {
