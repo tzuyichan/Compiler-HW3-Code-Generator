@@ -54,6 +54,7 @@
     char TYPE[8];
     char FUNC_SIG[ID_MAX_LEN];
     char CURRENT_FUNC[ID_MAX_LEN];
+    char CURRENT_IDENT[ID_MAX_LEN];
     char FUNC_RET_TYPE;
     bool IN_FUNC_SCOPE = false;
     Table_head *T;
@@ -253,48 +254,61 @@ PrintStmt
 
 AssignmentStmt
     : IDENT {
-        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+        lookup_symbol($1, false);
+        strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } ASSIGN Expression {
         check_type($1, $4, $3);
+        REGISTER = lookup_symbol(CURRENT_IDENT, false);
         CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
     }
     // add assign
     | IDENT {
-        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+        lookup_symbol($1, false);
+        strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } ADD_ASSIGN Expression {
         check_type($1, $4, $3);
+        REGISTER = lookup_symbol(CURRENT_IDENT, false);
         CODEGEN("%cadd\n", get_op_type($1));
         CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
     }
     // sub assign
     | IDENT {
-        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+        lookup_symbol($1, false);
+        strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } SUB_ASSIGN Expression {
         check_type($1, $4, $3);
+        REGISTER = lookup_symbol(CURRENT_IDENT, false);
         CODEGEN("%csub\n", get_op_type($1));
         CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
     }
     // mul assign
     | IDENT {
-        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+        lookup_symbol($1, false);
+        strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } MUL_ASSIGN Expression {
         check_type($1, $4, $3);
+        REGISTER = lookup_symbol(CURRENT_IDENT, false);
         CODEGEN("%cmul\n", get_op_type($1));
         CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
     }
     // div assign
     | IDENT {
-        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+        lookup_symbol($1, false);
+        strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
     } QUO_ASSIGN Expression {
         check_type($1, $4, $3);
+        REGISTER = lookup_symbol(CURRENT_IDENT, false);
         CODEGEN("%cdiv\n", get_op_type($1));
         CODEGEN("%cstore %d\n", get_op_type($1), REGISTER);
     }
     // rem assign
     | IDENT {
-        REGISTER = lookup_symbol($1); strncpy($1, TYPE, 8);
+        lookup_symbol($1, false);
+        strncpy(CURRENT_IDENT, $1, ID_MAX_LEN); strncpy($1, TYPE, 8);
+    } QUO_ASSIGN Expression {
     } REM_ASSIGN Expression {
         check_type($1, $4, $3);
+        REGISTER = lookup_symbol(CURRENT_IDENT, false);
         CODEGEN("irem\n");
         CODEGEN("istore %d\n", REGISTER);
     }
@@ -356,8 +370,8 @@ MulExpr
 
 CastExpr
     : UnaryExpr
-    | INT '(' AddExpr ')'          { $$ = "int32"; printf("f2i\n"); }
-    | FLOAT '(' AddExpr ')'        { $$ = "float32"; printf("i2f\n"); }
+    | INT '(' AddExpr ')'          { $$ = "int32"; CODEGEN("f2i\n"); }
+    | FLOAT '(' AddExpr ')'        { $$ = "float32"; CODEGEN("i2f\n"); }
 ;
 
 UnaryExpr
