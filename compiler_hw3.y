@@ -36,8 +36,8 @@
     /* Symbol table function - you can add new functions if needed. */
     /* parameters and return type can be changed */
     static void create_sym_table();
-    static void insert_symbol(char *name, char *type);
-    static void lookup_symbol(char *name);
+    static int insert_symbol(char *name, char *type);
+    static int lookup_symbol(char *name);
     static void lookup_func(char *name);
     static void dump_sym_table();
     static char *check_type(char *nterm1, char *nterm2, char *operator);
@@ -401,9 +401,10 @@ static void create_sym_table() {
     IN_FUNC_SCOPE = false;
 }
 
-static void insert_symbol(char *name, char *type) {
+static int insert_symbol(char *name, char *type) {
     char type_str[ID_MAX_LEN];
     char func_sig[ID_MAX_LEN];
+    int addr;
     memset(type_str, 0, ID_MAX_LEN);
     memset(func_sig, 0, ID_MAX_LEN);
 
@@ -436,10 +437,14 @@ static void insert_symbol(char *name, char *type) {
     printf("> Insert `%s` (addr: %d) to scope level %d\n", 
            name, entry->addr, entry->scope);
 
+    addr = entry->addr;
     free(entry);
+
+    return addr;
 }
 
-static void lookup_symbol(char *name) {
+static int lookup_symbol(char *name) {
+    int addr;
     Result *R = find_symbol(T, name);
 
     if (R)
@@ -452,7 +457,11 @@ static void lookup_symbol(char *name) {
         strncpy(TYPE, "ERROR", 8);
         printf("error:%d: undefined: %s\n", yylineno + 1, name);
     }
+
+    addr = R->addr;
     free(R);
+
+    return addr;
 }
 
 static void lookup_func(char *name)
