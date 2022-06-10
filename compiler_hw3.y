@@ -18,10 +18,6 @@
         printf("error:%d: %s\n", yylineno, s);
     }
 
-    extern int yylineno;
-    extern int yylex();
-    extern FILE *yyin;
-
     /* Used to generate code */
     /* As printf; the usage: CODEGEN("%d - %s\n", 100, "Hello world"); */
     /* We do not enforce the use of this macro */
@@ -46,11 +42,7 @@
     static void cmp_codegen(char *cmp_type, char *type);
 
     /* Global variables */
-    bool HAS_ERROR = false;
-    FILE *fout = NULL;
-    int INDENT_LVL = 0;
-    int REGISTER = 0;
-    int LABEL_CNT = 0;
+    // parser
     char TYPE[8];
     char FUNC_SIG[ID_MAX_LEN];
     char CURRENT_FUNC[ID_MAX_LEN];
@@ -58,6 +50,21 @@
     char FUNC_RET_TYPE;
     bool IN_FUNC_SCOPE = false;
     Table_head *T;
+
+    // code generation
+    bool HAS_ERROR = false;
+    FILE *fout = NULL;
+    int INDENT_LVL = 0;
+    int REGISTER = 0;
+    int LABEL_CNT = 0;
+    typedef struct switch_t
+    {
+        int count;
+        int n_cases;
+        bool has_default;
+        int case_val[128];
+    } Switch_t;
+    Switch_t Switch;
 %}
 
 %error-verbose
@@ -251,12 +258,40 @@ ForClause
 ;
 
 SwitchStmt
-    : SWITCH Expression Block
+    : SWITCH Expression {
+        CODEGEN("goto L_switch_begin_%d\n", Switch.count);
+    } Block {
+        INDENT_LVL--;
+        CODEGEN("L_switch_begin_%d:\n", Switch.count);
+        CODEGEN("lookupswitch\n");
+        INDENT_LVL++;
+        for (int i = 0; i < Switch.n_cases; ++i)
+            CODEGEN("%d: L_case_%d\n", Switch.case_val[i], Switch.case_val[i]);
+        if (Switch.has_default)
+            CODEGEN("default: L_case_default_%d\n", Switch.count);
+        INDENT_LVL--;
+        CODEGEN("L_switch_end_%d:\n", Switch.count);
+        INDENT_LVL++;
+
+        Switch.count++;
+        Switch.n_cases = 0;
+        Switch.has_default = false;
+    }
 ;
 
 CaseStmt
-    : CASE INT_LIT { printf("case %d\n", $2); } ':' Block
-    | DEFAULT ':' Block
+    : CASE INT_LIT ':' {
+        INDENT_LVL--;
+        CODEGEN("L_case_%d:\n", $2);
+        INDENT_LVL++;
+        Switch.case_val[Switch.n_cases++] = $2;
+    } Block { CODEGEN("goto L_switch_end_%d\n", Switch.count); }
+    | DEFAULT ':' {
+        Switch.has_default = true;
+        INDENT_LVL--;
+        CODEGEN("L_case_default_%d:\n", Switch.count);
+        INDENT_LVL++;
+    } Block { CODEGEN("goto L_switch_end_%d\n", Switch.count); }
 ;
 
 PrintStmt
@@ -452,10 +487,14 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // initialize global strings
+    // initialize global variables
     memset(TYPE, 0, 8);
     memset(FUNC_SIG, 0, ID_MAX_LEN);
     memset(CURRENT_FUNC, 0, ID_MAX_LEN);
+    Switch.count = 0;
+    Switch.n_cases = 0;
+    Switch.has_default = false;
+    memset(Switch.case_val, 0, 128);
 
     /* Codegen output init */
     char *bytecode_filename = "hw3.j";
