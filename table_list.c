@@ -97,6 +97,11 @@ void delete_list(List *L)
 
 void list_entry_types(List *L, char *type_str)
 {
+    if (L->first == NULL)
+    {
+        strcat(type_str, "V");
+        return;
+    }
     for (Node *p = L->first; p != NULL; p = p->next)
     {
         char type_abbrev = (p->type)[0] - 32; // ASCII case conversion
