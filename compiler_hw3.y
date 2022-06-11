@@ -29,6 +29,9 @@
             fprintf(fout, __VA_ARGS__); \
         } while (0)
 
+    #define MAIN_STACK_SIZE 100
+    #define FUNC_STACK_SIZE 20
+
     /* Symbol table function - you can add new functions if needed. */
     /* parameters and return type can be changed */
     static void create_sym_table();
@@ -134,8 +137,27 @@ FunctionDeclStmt
     : FuncOpen '(' ParameterList ')' ReturnType {
         FUNC_RET_TYPE = $5[0] - 32;  // ASCII case conversion
         insert_symbol(CURRENT_FUNC, "func");
+
+        int is_main_func = strcmp(CURRENT_FUNC, "main") == 0;
+        if (is_main_func)
+        {
+            CODEGEN(".method public static main([Ljava/lang/String;)V\n");
+        }
+        else
+        {
+            lookup_func(CURRENT_FUNC);
+            get_jasmin_func_sig(FUNC_SIG);
+            CODEGEN(".method public static %s%s\n", CURRENT_FUNC, FUNC_SIG);
+        }
+        int stack_size = (is_main_func) ? MAIN_STACK_SIZE : FUNC_STACK_SIZE;
+        CODEGEN(".limit stack %d\n", stack_size);
+        CODEGEN(".limit locals %d\n", stack_size);
+        INDENT_LVL++;
     }
-    FuncBlock
+    FuncBlock {
+        INDENT_LVL--;
+        CODEGEN(".end method\n");
+    }
 ;
 
 FuncOpen
@@ -163,8 +185,8 @@ FuncBlock
 ;
     
 ReturnStmt
-    : RETURN                { printf("return\n"); }
-    | RETURN Expression     { printf("%creturn\n", $2[0]); }
+    : RETURN                { CODEGEN("return\n"); }
+    | RETURN Expression     { CODEGEN("%creturn\n", get_op_type($2)); }
 ;
 
 ParameterIdentType
@@ -441,6 +463,8 @@ FunctionCall
     : IDENT '(' FuncCallParamList ')' {
         lookup_func($1);
         printf("call: %s%s\n", $1, FUNC_SIG);
+        get_jasmin_func_sig(FUNC_SIG);
+        CODEGEN("invokestatic Main/%s%s\n", $1, FUNC_SIG);
         strncpy($$, TYPE, 8);
     }
 ;
@@ -504,19 +528,12 @@ int main(int argc, char *argv[])
     CODEGEN(".source hw3.j\n");
     CODEGEN(".class public Main\n");
     CODEGEN(".super java/lang/Object\n");
-    CODEGEN(".method public static main([Ljava/lang/String;)V\n");
-    CODEGEN(".limit stack 100\n");
-    CODEGEN(".limit locals 100\n");
-    INDENT_LVL++;
 
     yylineno = 0;
     T = init_table();
     yyparse();
 
 	printf("Total lines: %d\n", yylineno);
-    CODEGEN("return\n");
-    INDENT_LVL--;
-    CODEGEN(".end method\n");
     fclose(fout);
     fclose(yyin);
 
@@ -639,8 +656,11 @@ static void lookup_func(char *name)
             case 'S':
                 strncpy(TYPE, "string", 8);
                 break;
-            default:
+            case 'V':
                 strncpy(TYPE, "void", 8);
+                break;
+            default:
+                strncpy(TYPE, "ERROR", 8);
         }
     }
     else
@@ -744,10 +764,10 @@ static char *check_type(char *nterm1, char *nterm2, char *op)
 
 static char get_op_type(char *type)
 {
-    if (strcmp(type, "int32") == 0 || strcmp(type, "float32") == 0)
-        return type[0];
-    else if (strcmp(type, "bool") == 0)
+    if (strcmp(type, "int32") == 0 || strcmp(type, "bool") == 0)
         return 'i';
+    else if (strcmp(type, "float32") == 0)
+        return 'f';
     else if (strcmp(type, "string") == 0)
         return 'a';
     else
