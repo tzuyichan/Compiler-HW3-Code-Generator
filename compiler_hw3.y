@@ -38,6 +38,7 @@
     static void dump_sym_table();
     static char *check_type(char *nterm1, char *nterm2, char *operator);
     static char get_op_type(char *type);
+    static void cat_jasmin_func_param(char param, char *j_func_sig);
     static void print_codegen(char *print_type, char *type);
     static void cmp_codegen(char *cmp_type, char *type);
 
@@ -752,6 +753,26 @@ static char get_op_type(char *type)
     {
         HAS_ERROR = true;
         return 'z';
+    }
+}
+
+static void cat_jasmin_func_param(char param, char *j_func_sig)
+{
+    switch (param)
+    {
+        case 'I':
+        case 'B':
+            strcat(j_func_sig, "I");
+            break;
+        case 'F':
+            strcat(j_func_sig, "F");
+            break;
+        case 'S':
+            strcat(j_func_sig, "Ljava/lang/String;");
+            break;
+        case 'V':
+            strcat(j_func_sig, "V");
+            break;
     }
 }
 
