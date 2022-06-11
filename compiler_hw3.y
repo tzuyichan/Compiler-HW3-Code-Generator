@@ -38,6 +38,7 @@
     static void dump_sym_table();
     static char *check_type(char *nterm1, char *nterm2, char *operator);
     static char get_op_type(char *type);
+    static void get_jasmin_func_sig(char *func_sig);
     static void cat_jasmin_func_param(char param, char *j_func_sig);
     static void print_codegen(char *print_type, char *type);
     static void cmp_codegen(char *cmp_type, char *type);
@@ -754,6 +755,31 @@ static char get_op_type(char *type)
         HAS_ERROR = true;
         return 'z';
     }
+}
+
+static void get_jasmin_func_sig(char *func_sig)
+{
+    char new_sig[ID_MAX_LEN];
+    char *p;
+    memset(new_sig, 0, ID_MAX_LEN);
+
+    p = strtok(func_sig, "()");
+
+    // write function parameters
+    strcat(new_sig, "(");
+    for (int i = 0; i < strlen(p); ++i)
+    {
+        if (p[0] == 'V') break;
+        cat_jasmin_func_param(p[i], new_sig);
+    }
+    strcat(new_sig, ")");
+
+    // write return value
+    p = strtok(NULL, "()");
+    cat_jasmin_func_param(p[0], new_sig);
+
+    memset(func_sig, 0, ID_MAX_LEN);
+    strncpy(func_sig, new_sig, ID_MAX_LEN);
 }
 
 static void cat_jasmin_func_param(char param, char *j_func_sig)
