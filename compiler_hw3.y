@@ -166,6 +166,7 @@ FuncOpen
         strncpy(CURRENT_FUNC, $2, ID_MAX_LEN);
         create_sym_table();
         IN_FUNC_SCOPE = true;
+        reset_variable_addr(T);
     }
 ;
 

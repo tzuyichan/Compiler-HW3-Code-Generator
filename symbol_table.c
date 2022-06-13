@@ -106,3 +106,8 @@ void get_func_param_types(Table_head *T, char *type_str)
 {
     list_entry_types(T->first->list, type_str);
 }
+
+void reset_variable_addr(Table_head *T)
+{
+    T->next_free_addr = 0;
+}

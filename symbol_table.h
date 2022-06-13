@@ -22,5 +22,6 @@ Result *find_symbol(Table_head *T, char *name);
 Node *dump_next_entry(Table_head *T);
 void delete_table(Table_head *T);
 void get_func_param_types(Table_head *T, char *type_str);
+void reset_variable_addr(Table_head *T);
 
 #endif
