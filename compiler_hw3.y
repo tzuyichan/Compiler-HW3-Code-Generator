@@ -62,6 +62,7 @@
     int INDENT_LVL = 0;
     int REGISTER = 0;
     int LABEL_CNT = 0;
+    bool HAS_RETURN_STMT = false;
     typedef struct switch_t
     {
         int count;
@@ -155,6 +156,11 @@ FunctionDeclStmt
         INDENT_LVL++;
     }
     FuncBlock {
+        if (!HAS_RETURN_STMT)
+        {
+            CODEGEN("return\n");
+            HAS_RETURN_STMT = false;
+        }
         INDENT_LVL--;
         CODEGEN(".end method\n");
     }
@@ -186,8 +192,8 @@ FuncBlock
 ;
     
 ReturnStmt
-    : RETURN                { CODEGEN("return\n"); }
-    | RETURN Expression     { CODEGEN("%creturn\n", get_op_type($2)); }
+    : RETURN                { CODEGEN("return\n"); HAS_RETURN_STMT = true; }
+    | RETURN Expression     { CODEGEN("%creturn\n", get_op_type($2)); HAS_RETURN_STMT = true; }
 ;
 
 ParameterIdentType
